@@ -9,51 +9,47 @@ import SwiftUI
 
 struct WakeFlowView: View {
     private let planText = "Today: Do the first card, then keep distractions blocked."
+    private let firstCardText = "First card: Review today's top task and start a 25-minute lock-in."
     private let speechService: SpeechService
 
+    @EnvironmentObject private var router: AppRouter
     @State private var dragOffset: CGFloat = 0
     @State private var isAwake = false
-    @State private var showContinue = false
 
     init(speechService: SpeechService = SystemSpeechService()) {
         self.speechService = speechService
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
+        VStack(spacing: 24) {
+            Spacer()
 
-                Text("Good morning")
-                    .font(.largeTitle)
+            Text("Good morning")
+                .font(.largeTitle)
+                .fontWeight(.semibold)
+
+            Text(planText)
+                .font(.title3)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
+            slideToWakeControl
+
+            if isAwake {
+                Text("Awake ✅")
+                    .font(.title2)
                     .fontWeight(.semibold)
 
-                Text(planText)
-                    .font(.title3)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-
-                slideToWakeControl
-
-                if isAwake {
-                    Text("Awake ✅")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-
-                    Button("Continue") {
-                        showContinue = true
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button("Continue") {
+                    router.route = .home
                 }
+                .buttonStyle(.borderedProminent)
+            }
 
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
-            .navigationDestination(isPresented: $showContinue) {
-                AlarmTestView()
-            }
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
     }
 
     private var slideToWakeControl: some View {
@@ -109,10 +105,11 @@ struct WakeFlowView: View {
         withAnimation(.spring()) {
             dragOffset = maxOffset
         }
-        speechService.speak(planText)
+        speechService.speak(firstCardText)
     }
 }
 
 #Preview {
     WakeFlowView()
+        .environmentObject(AppRouter())
 }

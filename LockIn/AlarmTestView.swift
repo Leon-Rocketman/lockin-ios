@@ -23,6 +23,7 @@ struct AlarmTestView: View {
         content.title = "Test Alarm"
         content.body = "This is a test alarm notification."
         content.sound = .default
+        content.userInfo = ["route": "wakeflow"]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
         let request = UNNotificationRequest(
@@ -40,4 +41,3 @@ struct AlarmTestView: View {
 #Preview {
     AlarmTestView()
 }
-
