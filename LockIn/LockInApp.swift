@@ -6,53 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 import UserNotifications
 
-@main
-struct LockInApp: App {
-    @StateObject private var router: AppRouter
-    private let notificationDelegate: NotificationDelegate
+final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelegate {
+    private let router: AppRouter
 
-    init() {
-        let router = AppRouter()
-        _router = StateObject(wrappedValue: router)
-        let delegate = NotificationDelegate()
-        delegate.router = router
-        notificationDelegate = delegate
-
-        requestNotificationPermission()
-        UNUserNotificationCenter.current().delegate = delegate
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            Group {
-                switch router.route {
-                case .home:
-                    AlarmTestView()
-                case .wakeflow:
-                    WakeFlowView()
-                }
-            }
-            .environmentObject(router)
-        }
-    }
-
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in
-            // No-op; system handles the prompt on first launch.
-        }
-    }
-}
-
-final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    weak var router: AppRouter?
-
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        return [.banner, .sound]
+    init(router: AppRouter) {
+        self.router = router
     }
 
     func userNotificationCenter(
@@ -60,12 +21,53 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let routeValue = response.notification.request.content.userInfo["route"] as? String
-        if routeValue == "wakeflow" {
-            DispatchQueue.main.async { [weak self] in
-                self?.router?.route = .wakeflow
+        let userInfo = response.notification.request.content.userInfo
+        let route = userInfo["route"] as? String
+
+        if route == "wakeflow" {
+            DispatchQueue.main.async {
+                self.router.pendingIntent = .alarm(notificationID: response.notification.request.identifier)
             }
         }
+
         completionHandler()
+    }
+}
+
+@main
+struct LockInApp: App {
+    @StateObject private var router: AppRouter
+    @StateObject private var speech = SystemSpeechService()
+    private let notifDelegate: NotificationRouterDelegate
+
+    init() {
+        let r = AppRouter()
+        _router = StateObject(wrappedValue: r)
+        notifDelegate = NotificationRouterDelegate(router: r)
+
+        requestNotificationPermission()
+        UNUserNotificationCenter.current().delegate = notifDelegate
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            Group {
+                switch router.root {
+                case .todo:
+                    SingleCardTodoView()
+                case .wakeFlow:
+                    WakeFlowView()
+                }
+            }
+            .environmentObject(router)
+            .environmentObject(speech)
+        }
+        .modelContainer(for: TodoItem.self)
+    }
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in
+            // No-op; system handles the prompt on first launch.
+        }
     }
 }
