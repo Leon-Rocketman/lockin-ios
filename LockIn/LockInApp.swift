@@ -19,7 +19,7 @@ struct LockInApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AlarmTestView()
+            WakeFlowView()
         }
     }
 
