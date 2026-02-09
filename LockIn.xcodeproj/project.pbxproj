@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		355363922F3A1FCC002D4B28 /* LockIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockIn.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		355363922F3A1FCC002D4B28 /* LockIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = LockIn.app; path = "/Users/leon/Desktop/project/LockIn/build/Debug-iphoneos/LockIn.app"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,16 +33,7 @@
 			isa = PBXGroup;
 			children = (
 				355363942F3A1FCC002D4B28 /* LockIn */,
-				355363932F3A1FCC002D4B28 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		355363932F3A1FCC002D4B28 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				355363922F3A1FCC002D4B28 /* LockIn.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -95,7 +86,7 @@
 			mainGroup = 355363892F3A1FCC002D4B28;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 355363932F3A1FCC002D4B28 /* Products */;
+			productRefGroup = 355363892F3A1FCC002D4B28;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

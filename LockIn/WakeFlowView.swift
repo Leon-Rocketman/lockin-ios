@@ -9,16 +9,14 @@ import SwiftUI
 
 struct WakeFlowView: View {
     private let planText = "Today: Do the first card, then keep distractions blocked."
-    private let firstCardText = "First card: Review today's top task and start a 25-minute lock-in."
-    private let speechService: SpeechService
+    private let firstCardText = "第一张卡：回顾今天的最重要任务，然后开始一个25分钟的锁定专注。"
 
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var speech: SystemSpeechService
+    @Environment(\.scenePhase) private var scenePhase
     @State private var dragOffset: CGFloat = 0
     @State private var isAwake = false
-
-    init(speechService: SpeechService = SystemSpeechService()) {
-        self.speechService = speechService
-    }
+    @State private var pendingSpeak = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -39,17 +37,18 @@ struct WakeFlowView: View {
                 Text("Awake ✅")
                     .font(.title2)
                     .fontWeight(.semibold)
-
-                Button("Continue") {
-                    router.route = .home
-                }
-                .buttonStyle(.borderedProminent)
             }
 
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
+        .onChange(of: scenePhase) { _,_ in
+            scheduleSpeakIfPossible()
+        }
+        .onChange(of: pendingSpeak) { _,_ in
+            scheduleSpeakIfPossible()
+        }
     }
 
     private var slideToWakeControl: some View {
@@ -105,11 +104,22 @@ struct WakeFlowView: View {
         withAnimation(.spring()) {
             dragOffset = maxOffset
         }
-        speechService.speak(firstCardText)
+        pendingSpeak = true
+        scheduleSpeakIfPossible()
+        router.completeWakeFlow()
+    }
+
+    private func scheduleSpeakIfPossible() {
+        guard pendingSpeak, scenePhase == .active else { return }
+        pendingSpeak = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            speech.speak(firstCardText)
+        }
     }
 }
 
 #Preview {
     WakeFlowView()
         .environmentObject(AppRouter())
+        .environmentObject(SystemSpeechService())
 }
