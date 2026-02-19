@@ -11,9 +11,11 @@ import UserNotifications
 
 final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelegate {
     private let router: AppRouter
+    private let alarmSession: AlarmSessionStore
 
-    init(router: AppRouter) {
+    init(router: AppRouter, alarmSession: AlarmSessionStore) {
         self.router = router
+        self.alarmSession = alarmSession
     }
 
     func userNotificationCenter(
@@ -26,6 +28,7 @@ final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelega
 
         if route == "wakeflow" {
             DispatchQueue.main.async {
+                self.alarmSession.notificationTriggered()
                 self.router.pendingIntent = .alarm(notificationID: response.notification.request.identifier)
             }
         }
@@ -43,6 +46,7 @@ final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelega
 
         if route == "wakeflow" {
             DispatchQueue.main.async {
+                self.alarmSession.notificationTriggered()
                 self.router.pendingIntent = .alarm(notificationID: notification.request.identifier)
             }
         }
@@ -54,13 +58,16 @@ final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelega
 @main
 struct LockInApp: App {
     @StateObject private var router: AppRouter
+    @StateObject private var alarmSession: AlarmSessionStore
     @StateObject private var speech = SystemSpeechService()
     private let notifDelegate: NotificationRouterDelegate
 
     init() {
         let r = AppRouter()
+        let a = AlarmSessionStore()
         _router = StateObject(wrappedValue: r)
-        notifDelegate = NotificationRouterDelegate(router: r)
+        _alarmSession = StateObject(wrappedValue: a)
+        notifDelegate = NotificationRouterDelegate(router: r, alarmSession: a)
 
         requestNotificationPermission()
         UNUserNotificationCenter.current().delegate = notifDelegate
@@ -77,6 +84,7 @@ struct LockInApp: App {
                 }
             }
             .environmentObject(router)
+            .environmentObject(alarmSession)
             .environmentObject(speech)
         }
         .modelContainer(for: [TodoItem.self, SleepJournal.self])
