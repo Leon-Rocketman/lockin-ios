@@ -56,6 +56,18 @@ struct SingleCardTodoView: View {
                 TodoStore.seedIfNeeded(in: modelContext)
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Alarm Test") {
+                        AlarmTestView()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Speech Debug") {
+                        SpeechDebugView()
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink("🌙 Sleep Mode") {
                         SleepModeView()
@@ -98,7 +110,7 @@ struct SingleCardTodoView: View {
         let content = UNMutableNotificationContent()
         content.title = "Debug WakeFlow"
         content.body = "Tap to open WakeFlow."
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.caf"))
         content.userInfo = ["route": "wakeflow"]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)

@@ -55,19 +55,48 @@ final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelega
     }
 }
 
+@MainActor
+private func adoptDeliveredWakeflowIfNeeded(router: AppRouter, alarmSession: AlarmSessionStore) {
+    let center = UNUserNotificationCenter.current()
+    center.getDeliveredNotifications { notifications in
+        let wakeflowAlarmIdentifiers: [String] = notifications.compactMap { notification -> String? in
+            guard (notification.request.content.userInfo["route"] as? String) == "wakeflow" else {
+                return nil
+            }
+            let identifier = notification.request.identifier
+            return identifier.hasPrefix("alarm_") ? identifier : nil
+        }
+
+        guard !wakeflowAlarmIdentifiers.isEmpty else { return }
+
+        DispatchQueue.main.async {
+            alarmSession.notificationTriggered()
+            router.pendingIntent = .alarm(notificationID: wakeflowAlarmIdentifiers.first)
+            center.removeDeliveredNotifications(withIdentifiers: wakeflowAlarmIdentifiers)
+        }
+    }
+}
+
 @main
 struct LockInApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var router: AppRouter
     @StateObject private var alarmSession: AlarmSessionStore
-    @StateObject private var speech = SystemSpeechService()
+    @StateObject private var speechPrefs: SpeechPreferences
+    @StateObject private var speech: SystemSpeechService
     private let notifDelegate: NotificationRouterDelegate
 
     init() {
         let r = AppRouter()
         let a = AlarmSessionStore()
+        let sp = SpeechPreferences()
+        let ss = SystemSpeechService(prefs: sp)
         _router = StateObject(wrappedValue: r)
         _alarmSession = StateObject(wrappedValue: a)
+        _speechPrefs = StateObject(wrappedValue: sp)
+        _speech = StateObject(wrappedValue: ss)
         notifDelegate = NotificationRouterDelegate(router: r, alarmSession: a)
+        AlarmAudioPlayer.shared.bind(to: a)
 
         requestNotificationPermission()
         UNUserNotificationCenter.current().delegate = notifDelegate
@@ -86,6 +115,11 @@ struct LockInApp: App {
             .environmentObject(router)
             .environmentObject(alarmSession)
             .environmentObject(speech)
+            .environmentObject(speechPrefs)
+            .onChange(of: scenePhase) { _, newPhase in
+                guard newPhase == .active else { return }
+                adoptDeliveredWakeflowIfNeeded(router: router, alarmSession: alarmSession)
+            }
         }
         .modelContainer(for: [TodoItem.self, SleepJournal.self])
     }
