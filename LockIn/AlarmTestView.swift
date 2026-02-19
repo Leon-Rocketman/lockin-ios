@@ -22,7 +22,7 @@ struct AlarmTestView: View {
         let content = UNMutableNotificationContent()
         content.title = "Test Alarm"
         content.body = "This is a test alarm notification."
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.caf"))
         content.userInfo = ["route": "wakeflow"]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)

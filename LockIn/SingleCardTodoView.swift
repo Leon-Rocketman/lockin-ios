@@ -98,7 +98,7 @@ struct SingleCardTodoView: View {
         let content = UNMutableNotificationContent()
         content.title = "Debug WakeFlow"
         content.body = "Tap to open WakeFlow."
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.caf"))
         content.userInfo = ["route": "wakeflow"]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)

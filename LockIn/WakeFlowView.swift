@@ -105,6 +105,7 @@ struct WakeFlowView: View {
 
     private func confirmAwake(maxOffset: CGFloat) {
         alarmSession.completedWakeFlow()
+        NotificationScheduler().cancelAlarmSeries()
         isAwake = true
         withAnimation(.spring()) {
             dragOffset = maxOffset

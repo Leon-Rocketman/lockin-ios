@@ -55,8 +55,25 @@ final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelega
     }
 }
 
+@MainActor
+private func adoptDeliveredWakeflowIfNeeded(router: AppRouter, alarmSession: AlarmSessionStore) {
+    UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
+        let hasWakeflow = notifications.contains { notification in
+            (notification.request.content.userInfo["route"] as? String) == "wakeflow"
+        }
+
+        guard hasWakeflow else { return }
+
+        DispatchQueue.main.async {
+            alarmSession.notificationTriggered()
+            router.pendingIntent = .alarm(notificationID: nil)
+        }
+    }
+}
+
 @main
 struct LockInApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var router: AppRouter
     @StateObject private var alarmSession: AlarmSessionStore
     @StateObject private var speech = SystemSpeechService()
@@ -68,6 +85,7 @@ struct LockInApp: App {
         _router = StateObject(wrappedValue: r)
         _alarmSession = StateObject(wrappedValue: a)
         notifDelegate = NotificationRouterDelegate(router: r, alarmSession: a)
+        AlarmAudioPlayer.shared.bind(to: a)
 
         requestNotificationPermission()
         UNUserNotificationCenter.current().delegate = notifDelegate
@@ -86,6 +104,10 @@ struct LockInApp: App {
             .environmentObject(router)
             .environmentObject(alarmSession)
             .environmentObject(speech)
+            .onChange(of: scenePhase) { _, newPhase in
+                guard newPhase == .active else { return }
+                adoptDeliveredWakeflowIfNeeded(router: router, alarmSession: alarmSession)
+            }
         }
         .modelContainer(for: [TodoItem.self, SleepJournal.self])
     }
