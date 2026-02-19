@@ -5,33 +5,94 @@ struct MorningBriefingInput {
     let weatherText: String?      // e.g. "晴天" / "多云" / nil
     let unfinishedTodos: [String] // already trimmed titles
     let userName: String          // e.g. "里昂"
+    let maxTodoSpoken: Int
+    let includeClosing: Bool
+
+    init(
+        now: Date,
+        weatherText: String?,
+        unfinishedTodos: [String],
+        userName: String,
+        maxTodoSpoken: Int = 5,
+        includeClosing: Bool = true
+    ) {
+        self.now = now
+        self.weatherText = weatherText
+        self.unfinishedTodos = unfinishedTodos
+        self.userName = userName
+        self.maxTodoSpoken = maxTodoSpoken
+        self.includeClosing = includeClosing
+    }
 }
 
 struct MorningBriefingBuilder {
 
-    /// Build a short, natural Mandarin briefing line for TTS.
-    /// Output example:
-    /// "里昂你好，今天是2月19号，晴天，今天的任务为：复盘计划，开始第一个25分钟锁定，喝水拉伸。"
     static func build(_ input: MorningBriefingInput) -> String {
         let dateText = formatChineseDate(input.now)
 
         let weather = (input.weatherText?.trimmingCharacters(in: .whitespacesAndNewlines))
         let weatherText = (weather?.isEmpty == false) ? weather! : "天气未知"
 
-        let todos = input.unfinishedTodos
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let cleanedTodos = input.unfinishedTodos
+            .map { normalizeForSpeech($0) }
             .filter { !$0.isEmpty }
 
-        let todoText: String
-        if todos.isEmpty {
-            todoText = "今天的任务已清空，保持节奏。"
+        let s1 = "\(input.userName)，早上好。"
+        let s2 = "今天是\(dateText)，\(weatherText)。"
+
+        let s3: String
+        if cleanedTodos.isEmpty {
+            s3 = input.includeClosing
+                ? "今天任务已清空。保持节奏就好。"
+                : "今天任务已清空。"
         } else {
-            // Use Chinese enumeration style: A，B，C
-            let joined = todos.joined(separator: "，")
-            todoText = "今天的任务为：\(joined)。"
+            let maxN = max(1, input.maxTodoSpoken)
+            let spoken = Array(cleanedTodos.prefix(maxN))
+            var taskLine = "你今天的重点是：\(spoken.joined(separator: "，"))。"
+
+            let remaining = cleanedTodos.count - spoken.count
+            if remaining > 0 {
+                taskLine += "另外还有\(remaining)项未完成。"
+            }
+            if input.includeClosing {
+                taskLine += "我们开始吧。"
+            }
+            s3 = taskLine
         }
 
-        return "\(input.userName)你好，今天是\(dateText)，\(weatherText)，\(todoText)"
+        return "\(s1)\(s2)\(s3)"
+    }
+
+    private static func normalizeForSpeech(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.isEmpty { return "" }
+
+        s = s.replacingOccurrences(of: ":", with: "：")
+        s = s.replacingOccurrences(of: "-", with: "—")
+
+        let replacements: [(String, String)] = [
+            ("Agentic Coding", "智能体编程"),
+            ("agentic coding", "智能体编程"),
+            ("Codex Hackathon", "Codex 黑客松"),
+            ("hackathon", "黑客松"),
+            ("Codex", "Codex"),
+            ("TTS", "语音播报"),
+            ("UI", "界面"),
+            ("APP", "应用"),
+            ("App", "应用"),
+            ("GPT", "GPT")
+        ]
+
+        for (from, to) in replacements {
+            s = s.replacingOccurrences(of: from, with: to)
+        }
+
+        if s.count > 30 {
+            let idx = s.index(s.startIndex, offsetBy: 30)
+            s = String(s[..<idx]) + "…"
+        }
+
+        return s
     }
 
     private static func formatChineseDate(_ date: Date) -> String {

@@ -56,6 +56,18 @@ struct SingleCardTodoView: View {
                 TodoStore.seedIfNeeded(in: modelContext)
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Alarm Test") {
+                        AlarmTestView()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Speech Debug") {
+                        SpeechDebugView()
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink("🌙 Sleep Mode") {
                         SleepModeView()

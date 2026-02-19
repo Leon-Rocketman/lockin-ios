@@ -14,7 +14,7 @@ struct NotificationScheduler {
             content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.caf"))
             content.userInfo = ["route": "wakeflow"]
 
-            let triggerDate = date.addingTimeInterval(Double(i) * 40)
+            let triggerDate = date.addingTimeInterval(Double(i) * 20)
 
             let trigger = UNCalendarNotificationTrigger(
                 dateMatching: Calendar.current.dateComponents(

@@ -6,13 +6,22 @@
 //
 
 import SwiftUI
+import SwiftData
 import UserNotifications
 
 struct AlarmTestView: View {
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         VStack {
             Button("Schedule Test Alarm") {
                 scheduleTestAlarm()
+            }
+
+            Button("Print Morning Briefing") {
+                Task {
+                    await debugPrintBriefing()
+                }
             }
         }
         .padding()
@@ -35,6 +44,22 @@ struct AlarmTestView: View {
         UNUserNotificationCenter.current().add(request) { _ in
             // No-op for test view.
         }
+    }
+
+    private func debugPrintBriefing() async {
+        let todos = TodoBriefingRepository.fetchUnfinishedTodoTitles(in: modelContext, limit: 7)
+        let weather = await PlaceholderWeatherProvider(fixedText: "晴天")
+            .fetchWeatherSummary(for: Date())
+
+        let text = MorningBriefingBuilder.build(
+            MorningBriefingInput(
+                now: Date(),
+                weatherText: weather,
+                unfinishedTodos: todos,
+                userName: "里昂"
+            )
+        )
+        print("MorningBriefing:", text)
     }
 }
 
