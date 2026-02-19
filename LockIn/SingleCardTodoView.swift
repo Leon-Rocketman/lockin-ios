@@ -55,7 +55,16 @@ struct SingleCardTodoView: View {
             .task {
                 TodoStore.seedIfNeeded(in: modelContext)
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink("🌙 Sleep Mode") {
+                        SleepModeView()
+                    }
+                }
+            }
+
         }
+        
     }
 
     private var currentTodo: TodoItem? {

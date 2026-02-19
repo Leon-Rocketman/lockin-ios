@@ -62,7 +62,7 @@ struct LockInApp: App {
             .environmentObject(router)
             .environmentObject(speech)
         }
-        .modelContainer(for: TodoItem.self)
+        .modelContainer(for: [TodoItem.self, SleepJournal.self])
     }
 
     private func requestNotificationPermission() {
