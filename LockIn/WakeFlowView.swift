@@ -12,6 +12,7 @@ struct WakeFlowView: View {
     private let firstCardText = "第一张卡：回顾今天的最重要任务，然后开始一个25分钟的锁定专注。"
 
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var alarmSession: AlarmSessionStore
     @EnvironmentObject private var speech: SystemSpeechService
     @Environment(\.scenePhase) private var scenePhase
     @State private var dragOffset: CGFloat = 0
@@ -48,6 +49,9 @@ struct WakeFlowView: View {
         }
         .onChange(of: pendingSpeak) { _,_ in
             scheduleSpeakIfPossible()
+        }
+        .onAppear {
+            alarmSession.enteredWakeFlow()
         }
     }
 
@@ -100,6 +104,7 @@ struct WakeFlowView: View {
     }
 
     private func confirmAwake(maxOffset: CGFloat) {
+        alarmSession.completedWakeFlow()
         isAwake = true
         withAnimation(.spring()) {
             dragOffset = maxOffset
@@ -121,5 +126,6 @@ struct WakeFlowView: View {
 #Preview {
     WakeFlowView()
         .environmentObject(AppRouter())
+        .environmentObject(AlarmSessionStore())
         .environmentObject(SystemSpeechService())
 }
