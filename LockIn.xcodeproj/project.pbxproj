@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		355363922F3A1FCC002D4B28 /* LockIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = LockIn.app; path = "/Users/leon/Desktop/project/LockIn/build/Debug-iphoneos/LockIn.app"; sourceTree = "<absolute>"; };
+		3537797F2F3A49CB00EE9C3B /* LockIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockIn.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +33,7 @@
 			isa = PBXGroup;
 			children = (
 				355363942F3A1FCC002D4B28 /* LockIn */,
+				3537797F2F3A49CB00EE9C3B /* LockIn.app */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,7 +59,7 @@
 			packageProductDependencies = (
 			);
 			productName = LockIn;
-			productReference = 355363922F3A1FCC002D4B28 /* LockIn.app */;
+			productReference = 3537797F2F3A49CB00EE9C3B /* LockIn.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -240,6 +241,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"LockIn/Preview Content\"";
@@ -269,6 +271,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"LockIn/Preview Content\"";
