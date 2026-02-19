@@ -32,6 +32,23 @@ final class NotificationRouterDelegate: NSObject, UNUserNotificationCenterDelega
 
         completionHandler()
     }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        let userInfo = notification.request.content.userInfo
+        let route = userInfo["route"] as? String
+
+        if route == "wakeflow" {
+            DispatchQueue.main.async {
+                self.router.pendingIntent = .alarm(notificationID: notification.request.identifier)
+            }
+        }
+
+        completionHandler([.banner, .sound])
+    }
 }
 
 @main
