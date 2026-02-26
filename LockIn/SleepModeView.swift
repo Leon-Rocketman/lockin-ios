@@ -22,7 +22,6 @@ struct SleepModeView: View {
 
     @Query private var journals: [SleepJournal]
     private let todayStart: Date
-    private let alarmNotificationID = "sleep-mode-alarm"
 
     init() {
         let start = Calendar.current.startOfDay(for: Date())
@@ -136,9 +135,6 @@ struct SleepModeView: View {
     }
 
     private func scheduleAlarmNotification(hour: Int, minute: Int) {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [alarmNotificationID])
-
         let calendar = Calendar.current
         let now = Date()
         guard let todayTime = calendar.date(
@@ -156,27 +152,7 @@ struct SleepModeView: View {
         } else {
             fireDate = calendar.date(byAdding: .day, value: 1, to: todayTime) ?? todayTime
         }
-
-        let fireComponents = calendar.dateComponents(
-            [.year, .month, .day, .hour, .minute],
-            from: fireDate
-        )
-
-        let content = UNMutableNotificationContent()
-        content.title = "LockIn Alarm"
-        content.body = "Wake flow is ready."
-        content.sound = .default
-        content.userInfo = ["route": "wakeflow"]
-
-        let trigger = UNCalendarNotificationTrigger(dateMatching: fireComponents, repeats: false)
-        let request = UNNotificationRequest(
-            identifier: alarmNotificationID,
-            content: content,
-            trigger: trigger
-        )
-        center.add(request) { _ in
-            // Best effort scheduling.
-        }
+        NotificationScheduler().scheduleAlarmSeries(date: fireDate)
     }
 }
 

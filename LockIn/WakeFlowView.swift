@@ -6,18 +6,21 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct WakeFlowView: View {
     private let planText = "Today: Do the first card, then keep distractions blocked."
-    private let firstCardText = "第一张卡：回顾今天的最重要任务，然后开始一个25分钟的锁定专注。"
 
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var alarmSession: AlarmSessionStore
     @EnvironmentObject private var speech: SystemSpeechService
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var dragOffset: CGFloat = 0
     @State private var isAwake = false
     @State private var pendingSpeak = false
+    @State private var pendingSpeakText: String?
+    @State private var isSpeakScheduled = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -105,21 +108,58 @@ struct WakeFlowView: View {
 
     private func confirmAwake(maxOffset: CGFloat) {
         alarmSession.completedWakeFlow()
+        NotificationScheduler().cancelAlarmSeries()
         isAwake = true
         withAnimation(.spring()) {
             dragOffset = maxOffset
         }
-        pendingSpeak = true
-        scheduleSpeakIfPossible()
+
+        Task {
+            let briefing = await buildMorningBriefingText()
+            await MainActor.run {
+                pendingSpeakText = briefing
+                pendingSpeak = true
+                scheduleSpeakIfPossible()
+            }
+        }
+
         router.completeWakeFlow()
     }
 
     private func scheduleSpeakIfPossible() {
         guard pendingSpeak, scenePhase == .active else { return }
-        pendingSpeak = false
+        guard !isSpeakScheduled else { return }
+        isSpeakScheduled = true
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            speech.speak(firstCardText)
+            guard pendingSpeak, scenePhase == .active else {
+                isSpeakScheduled = false
+                return
+            }
+            guard let text = pendingSpeakText, !text.isEmpty else {
+                isSpeakScheduled = false
+                return
+            }
+            speech.speak(text)
+            pendingSpeakText = nil
+            pendingSpeak = false
+            isSpeakScheduled = false
         }
+    }
+
+    private func buildMorningBriefingText() async -> String {
+        let todos = TodoBriefingRepository.fetchUnfinishedTodoTitles(in: modelContext, limit: 7)
+        let weather = await PlaceholderWeatherProvider(fixedText: "晴天")
+            .fetchWeatherSummary(for: Date())
+
+        return MorningBriefingBuilder.build(
+            MorningBriefingInput(
+                now: Date(),
+                weatherText: weather,
+                unfinishedTodos: todos,
+                userName: "里昂"
+            )
+        )
     }
 }
 

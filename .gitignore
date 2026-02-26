@@ -30,3 +30,7 @@ fastlane/test_output
 
 # Environment / secrets
 .env
+
+# LockIn temp resources
+LockIn/alarm.caf
+LockIn/alarm.mp3

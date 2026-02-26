@@ -19,30 +19,29 @@ struct SingleCardTodoView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { proxy in
-                let cardHeight = min(max(430, proxy.size.height * 0.68), proxy.size.height - 150)
+                let cardHeight = min(max(430, proxy.size.height * 0.68), proxy.size.height - 118)
 
                 ZStack {
                     deskBackground
 
-                    VStack(alignment: .leading, spacing: 14) {
-                        headerSection
-
+                    VStack(alignment: .leading, spacing: 10) {
                         if !pendingTodos.isEmpty {
-                            Button {
-                                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                                    isWalletExpanded.toggle()
+                            HStack {
+                                Spacer()
+
+                                Button {
+                                    withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                                        isWalletExpanded.toggle()
+                                    }
+                                } label: {
+                                    Image(systemName: isWalletExpanded ? "rectangle.stack.badge.person.crop.fill" : "rectangle.stack.fill")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundStyle(Color.white.opacity(0.92))
+                                        .frame(width: 46, height: 46)
+                                        .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                                 }
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Text(isWalletExpanded ? "Back to Focus Card" : "View All Todos")
-                                    Image(systemName: isWalletExpanded ? "rectangle.stack.badge.person.crop" : "rectangle.stack")
-                                }
-                                .font(.system(.headline, design: .rounded, weight: .bold))
-                                .foregroundStyle(Color.white.opacity(0.92))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 11)
-                                .background(Color.white.opacity(0.14), in: Capsule())
                             }
+                            .accessibilityLabel(isWalletExpanded ? "Back to focus card" : "View all todos")
                         }
 
                         if let current = currentTodo {
@@ -61,7 +60,7 @@ struct SingleCardTodoView: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 18)
-                    .padding(.top, 14)
+                    .padding(.top, 6)
                     .padding(.bottom, 18)
                 }
             }
@@ -69,6 +68,18 @@ struct SingleCardTodoView: View {
                 TodoStore.seedIfNeeded(in: modelContext)
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Alarm Test") {
+                        AlarmTestView()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Speech Debug") {
+                        SpeechDebugView()
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         SleepModeView()
@@ -133,50 +144,6 @@ struct SingleCardTodoView: View {
 
     private var pendingCount: Int {
         pendingTodos.count
-    }
-
-    private var completionRatio: Double {
-        guard !todos.isEmpty else { return 1 }
-        return Double(completedCount) / Double(todos.count)
-    }
-
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Focus Wallet")
-                .font(.system(size: 36, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
-
-            Text(isWalletExpanded ? "All cards are here. Pull one when ready." : "Pull one card. Finish one next move.")
-                .font(.system(size: 15, weight: .medium, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.78))
-
-            HStack(spacing: 10) {
-                statPill(title: "Pending", value: "\(pendingCount)")
-                statPill(title: "Done", value: "\(completedCount)")
-                statPill(title: "Progress", value: "\(Int(completionRatio * 100))%")
-            }
-        }
-    }
-
-    private func statPill(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased())
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.6))
-            Text(value)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                )
-        )
     }
 
     private func walletDeck(current: TodoItem, cardHeight: CGFloat) -> some View {
