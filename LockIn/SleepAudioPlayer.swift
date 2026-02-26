@@ -9,6 +9,7 @@ import AVFoundation
 
 final class SleepAudioPlayer: ObservableObject {
     private var player: AVAudioPlayer?
+    private let audioSession = AVAudioSession.sharedInstance()
 
     init() {
         loadAudio()
@@ -23,6 +24,7 @@ final class SleepAudioPlayer: ObservableObject {
     }
 
     func play() {
+        configureSessionForPlayback()
         player?.play()
     }
 
@@ -33,5 +35,15 @@ final class SleepAudioPlayer: ObservableObject {
     func stop() {
         player?.stop()
         player?.currentTime = 0
+        try? audioSession.setActive(false, options: [.notifyOthersOnDeactivation])
+    }
+
+    private func configureSessionForPlayback() {
+        do {
+            try audioSession.setCategory(.playback, mode: .default, options: [])
+            try audioSession.setActive(true)
+        } catch {
+            print("Sleep audio session error:", error)
+        }
     }
 }

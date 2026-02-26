@@ -12,6 +12,7 @@ import UserNotifications
 struct SleepModeView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var audioPlayer: SleepAudioPlayer
     @State private var journalText = ""
@@ -84,7 +85,10 @@ struct SleepModeView: View {
         }
         .onDisappear {
             saveJournal()
-            audioPlayer.stop()
+            // Keep audio playing when app moves to background; stop only when leaving view in foreground.
+            if scenePhase == .active {
+                audioPlayer.stop()
+            }
         }
         .sheet(isPresented: $showManageTodosSheet) {
             ManageTodosSheet()

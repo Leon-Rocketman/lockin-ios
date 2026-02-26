@@ -14,6 +14,10 @@ struct SingleCardTodoView: View {
     @Query(sort: \TodoItem.orderIndex) private var todos: [TodoItem]
 
     @State private var isWalletExpanded = false
+    @State private var isPresentingTodoEditor = false
+    @State private var editingTodoID: UUID?
+    @State private var todoDraftTitle = ""
+    @State private var todoDraftDone = false
     @Namespace private var deckNamespace
 
     var body: some View {
@@ -25,25 +29,6 @@ struct SingleCardTodoView: View {
                     deskBackground
 
                     VStack(alignment: .leading, spacing: 10) {
-                        if !pendingTodos.isEmpty {
-                            HStack {
-                                Spacer()
-
-                                Button {
-                                    withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                                        isWalletExpanded.toggle()
-                                    }
-                                } label: {
-                                    Image(systemName: isWalletExpanded ? "rectangle.stack.badge.person.crop.fill" : "rectangle.stack.fill")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                        .foregroundStyle(Color.white.opacity(0.92))
-                                        .frame(width: 46, height: 46)
-                                        .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                }
-                            }
-                            .accessibilityLabel(isWalletExpanded ? "Back to focus card" : "View all todos")
-                        }
-
                         if let current = currentTodo {
                             Group {
                                 if isWalletExpanded {
@@ -68,15 +53,29 @@ struct SingleCardTodoView: View {
                 TodoStore.seedIfNeeded(in: modelContext)
             }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink("Alarm Test") {
-                        AlarmTestView()
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !pendingTodos.isEmpty {
+                        Button {
+                            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                                isWalletExpanded.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isWalletExpanded ? "rectangle.stack.badge.person.crop.fill" : "rectangle.stack.fill")
+                                .foregroundStyle(.white)
+                        }
+                        .accessibilityLabel(isWalletExpanded ? "Back to focus card" : "View all todos")
                     }
                 }
 
-                ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink("Speech Debug") {
-                        SpeechDebugView()
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isWalletExpanded {
+                        Button {
+                            beginAddingTodo()
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.white)
+                        }
+                        .accessibilityLabel("Add new todo")
                     }
                 }
 
@@ -91,6 +90,18 @@ struct SingleCardTodoView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $isPresentingTodoEditor) {
+                TodoEditorSheet(
+                    modeTitle: editingTodoID == nil ? "New Todo" : "Edit Todo",
+                    todoTitle: $todoDraftTitle,
+                    isDone: $todoDraftDone,
+                    canSave: !todoDraftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    onCancel: {
+                        isPresentingTodoEditor = false
+                    },
+                    onSave: saveTodoDraft
+                )
+            }
         }
     }
 
@@ -171,7 +182,7 @@ struct SingleCardTodoView: View {
     }
 
     private func expandedWalletStack(cardHeight: CGFloat) -> some View {
-        let cards = pendingTodos
+        let cards = todos
         let expandedCardHeight = min(max(220, cardHeight * 0.50), 320)
         let visibleSpacing: CGFloat = max(120, expandedCardHeight * 0.56)
         let stackHeight = expandedCardHeight + CGFloat(max(0, cards.count - 1)) * visibleSpacing + 12
@@ -237,11 +248,14 @@ struct SingleCardTodoView: View {
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(index == 0 ? "CURRENT" : "NEXT #\(index + 1)")
+                Text(todo.isDone ? "DONE" : (index == 0 ? "CURRENT" : "NEXT #\(index + 1)"))
                     .font(.system(size: 11, weight: .black, design: .rounded))
                     .tracking(1.1)
                     .foregroundStyle(palette.text.opacity(0.68))
                 Spacer()
+                Image(systemName: "pencil")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(palette.text.opacity(0.65))
             }
 
             Text(todo.title)
@@ -260,6 +274,10 @@ struct SingleCardTodoView: View {
         .offset(y: CGFloat(index) * visibleSpacing)
         .rotationEffect(.degrees(Double(index % 2 == 0 ? -0.45 : 0.45)))
         .shadow(color: Color.black.opacity(0.26), radius: 14, x: 0, y: 10)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            beginEditing(todo)
+        }
     }
 
     private func previewTodoCard(
@@ -414,6 +432,37 @@ struct SingleCardTodoView: View {
             isWalletExpanded = false
         }
     }
+
+    private func beginAddingTodo() {
+        editingTodoID = nil
+        todoDraftTitle = ""
+        todoDraftDone = false
+        isPresentingTodoEditor = true
+    }
+
+    private func beginEditing(_ todo: TodoItem) {
+        editingTodoID = todo.id
+        todoDraftTitle = todo.title
+        todoDraftDone = todo.isDone
+        isPresentingTodoEditor = true
+    }
+
+    private func saveTodoDraft() {
+        let normalizedTitle = todoDraftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedTitle.isEmpty else { return }
+
+        if let editingTodoID, let todo = todos.first(where: { $0.id == editingTodoID }) {
+            todo.title = normalizedTitle
+            todo.isDone = todoDraftDone
+        } else {
+            let nextOrderIndex = (todos.map(\.orderIndex).max() ?? -1) + 1
+            let newTodo = TodoItem(title: normalizedTitle, orderIndex: nextOrderIndex, isDone: todoDraftDone)
+            modelContext.insert(newTodo)
+        }
+
+        try? modelContext.save()
+        isPresentingTodoEditor = false
+    }
 }
 
 private struct CardPalette {
@@ -421,6 +470,52 @@ private struct CardPalette {
     let bottom: Color
     let accent: Color
     let text: Color
+}
+
+private struct TodoEditorSheet: View {
+    let modeTitle: String
+    @Binding var todoTitle: String
+    @Binding var isDone: Bool
+    let canSave: Bool
+    let onCancel: () -> Void
+    let onSave: () -> Void
+
+    @FocusState private var isTitleFocused: Bool
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Todo") {
+                    TextField("What do you need to do?", text: $todoTitle, axis: .vertical)
+                        .lineLimit(1...3)
+                        .focused($isTitleFocused)
+                }
+
+                Section {
+                    Toggle("Mark as done", isOn: $isDone)
+                }
+            }
+            .navigationTitle(modeTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        onSave()
+                    }
+                    .disabled(!canSave)
+                }
+            }
+            .onAppear {
+                isTitleFocused = todoTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+        }
+    }
 }
 
 private struct PaperTextureOverlay: View {
